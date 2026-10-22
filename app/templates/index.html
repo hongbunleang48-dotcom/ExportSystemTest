@@ -1,0 +1,340 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="triage-layout">
+
+    <!-- LEFT COLUMN: DIAGNOSTIC INPUT FORM -->
+    <section class="card input-card">
+        <div class="card-header">
+            <h2>{{ _t('patient_indicators') }}</h2>
+            <p class="section-desc">{{ _t('indicators_desc') }}</p>
+        </div>
+
+        <!-- Scenario Quick Presets -->
+        <div class="presets-section">
+            <label class="presets-title">{{ _t('quick_scenarios') }}</label>
+            <div class="preset-buttons">
+                <button type="button" class="btn btn-preset" onclick="loadScenario('emergency')">
+                    {{ _t('preset_emergency') }}
+                </button>
+                <button type="button" class="btn btn-preset" onclick="loadScenario('urgent')">
+                    {{ _t('preset_urgent') }}
+                </button>
+                <button type="button" class="btn btn-preset" onclick="loadScenario('moderate')">
+                    {{ _t('preset_moderate') }}
+                </button>
+                <button type="button" class="btn btn-preset" onclick="loadScenario('low')">
+                    {{ _t('preset_low') }}
+                </button>
+                <button type="button" class="btn btn-preset" onclick="loadScenario('baseline')">
+                    {{ _t('preset_baseline') }}
+                </button>
+            </div>
+        </div>
+
+        <form action="{{ url_for('main.index') }}" method="POST" id="triageForm" class="triage-form">
+            <!-- Core Temperature -->
+            <div class="form-group">
+                <label for="temperature" class="form-label">
+                    {{ _t('temp_label') }}
+                    <span class="label-hint">{{ _t('temp_hint') }}</span>
+                </label>
+                <div class="input-with-unit">
+                    <input 
+                        type="number" 
+                        step="0.1" 
+                        min="30.0" 
+                        max="45.0" 
+                        id="temperature" 
+                        name="temperature" 
+                        class="form-control" 
+                        value="{{ inputs.temperature if inputs else 37.0 }}" 
+                        required
+                    >
+                    <span class="unit-badge">°C</span>
+                </div>
+            </div>
+
+            <!-- Duration in Days -->
+            <div class="form-group">
+                <label for="duration_days" class="form-label">
+                    {{ _t('duration_label') }}
+                    <span class="label-hint">{{ _t('duration_hint') }}</span>
+                </label>
+                <div class="input-with-unit">
+                    <input 
+                        type="number" 
+                        min="1" 
+                        max="180" 
+                        id="duration_days" 
+                        name="duration_days" 
+                        class="form-control" 
+                        value="{{ inputs.duration_days if inputs else 1 }}" 
+                        required
+                    >
+                    <span class="unit-badge">days</span>
+                </div>
+            </div>
+
+            <!-- Cough Severity -->
+            <div class="form-group">
+                <label for="cough_severity" class="form-label">{{ _t('cough_label') }}</label>
+                <select id="cough_severity" name="cough_severity" class="form-control">
+                    <option value="none" {% if inputs and inputs.cough_severity == 'none' %}selected{% endif %}>{{ _t('cough_none') }}</option>
+                    <option value="mild" {% if inputs and inputs.cough_severity == 'mild' %}selected{% endif %}>{{ _t('cough_mild') }}</option>
+                    <option value="moderate" {% if inputs and inputs.cough_severity == 'moderate' %}selected{% endif %}>{{ _t('cough_moderate') }}</option>
+                    <option value="severe" {% if inputs and inputs.cough_severity == 'severe' %}selected{% endif %}>{{ _t('cough_severe') }}</option>
+                </select>
+            </div>
+
+            <!-- Respiratory Distress -->
+            <div class="form-group">
+                <label for="respiratory_distress" class="form-label">
+                    {{ _t('distress_label') }}
+                    <span class="label-warning-tag">{{ _t('critical_indicator') }}</span>
+                </label>
+                <select id="respiratory_distress" name="respiratory_distress" class="form-control">
+                    <option value="none" {% if inputs and inputs.respiratory_distress == 'none' %}selected{% endif %}>{{ _t('distress_none') }}</option>
+                    <option value="mild" {% if inputs and inputs.respiratory_distress == 'mild' %}selected{% endif %}>{{ _t('distress_mild') }}</option>
+                    <option value="moderate" {% if inputs and inputs.respiratory_distress == 'moderate' %}selected{% endif %}>{{ _t('distress_moderate') }}</option>
+                    <option value="severe" {% if inputs and inputs.respiratory_distress == 'severe' %}selected{% endif %}>{{ _t('distress_severe') }}</option>
+                </select>
+            </div>
+
+            <!-- Oxygen Saturation SpO2 (Optional) -->
+            <div class="form-group">
+                <label for="oxygen_saturation" class="form-label">
+                    {{ _t('spo2_label') }} <span class="optional-tag">{{ _t('optional') }}</span>
+                    <span class="label-hint">{{ _t('spo2_hint') }}</span>
+                </label>
+                <div class="input-with-unit">
+                    <input 
+                        type="number" 
+                        step="0.5" 
+                        min="50.0" 
+                        max="100.0" 
+                        id="oxygen_saturation" 
+                        name="oxygen_saturation" 
+                        class="form-control" 
+                        placeholder="e.g. 96.0" 
+                        value="{{ inputs.oxygen_saturation if inputs and inputs.oxygen_saturation is not none else '' }}"
+                    >
+                    <span class="unit-badge">%</span>
+                </div>
+                <div id="spo2Alert" class="field-alert hidden">{{ _t('spo2_alert') }}</div>
+            </div>
+
+            <!-- Additional Acute Symptoms / Comorbidities -->
+            <div class="form-group checkboxes-group">
+                <label class="form-label">{{ _t('red_flags_label') }}</label>
+                
+                <label class="checkbox-container">
+                    <input type="checkbox" id="chest_pain" name="chest_pain" value="1" {% if inputs and inputs.chest_pain %}checked{% endif %}>
+                    <span class="checkbox-custom"></span>
+                    <span class="checkbox-label">
+                        <strong>{{ _t('chest_pain_label') }}</strong>
+                        <small>{{ _t('chest_pain_desc') }}</small>
+                    </span>
+                </label>
+
+                <label class="checkbox-container">
+                    <input type="checkbox" id="lethargy_confusion" name="lethargy_confusion" value="1" {% if inputs and inputs.lethargy_confusion %}checked{% endif %}>
+                    <span class="checkbox-custom"></span>
+                    <span class="checkbox-label">
+                        <strong>{{ _t('lethargy_label') }}</strong>
+                        <small>{{ _t('lethargy_desc') }}</small>
+                    </span>
+                </label>
+
+                <label class="checkbox-container">
+                    <input type="checkbox" id="high_risk_condition" name="high_risk_condition" value="1" {% if inputs and inputs.high_risk_condition %}checked{% endif %}>
+                    <span class="checkbox-custom"></span>
+                    <span class="checkbox-label">
+                        <strong>{{ _t('comorbidity_label') }}</strong>
+                        <small>{{ _t('comorbidity_desc') }}</small>
+                    </span>
+                </label>
+            </div>
+
+            <!-- Submit and Reset Buttons -->
+            <div class="form-actions">
+                <button type="submit" class="btn btn-primary btn-block">
+                    {{ _t('btn_submit') }}
+                </button>
+                <button type="button" class="btn btn-secondary" onclick="resetForm()">
+                    {{ _t('btn_reset') }}
+                </button>
+            </div>
+        </form>
+    </section>
+
+
+    <!-- RIGHT COLUMN: TRIAGE OUTCOME & AUDIT TRAIL -->
+    <section class="card output-card">
+        {% if result %}
+            <!-- Triage Outcome Header -->
+            <div class="triage-result-banner banner-{{ result.final_deduction.risk_level.badge_class }}">
+                <div class="result-header-top">
+                    <span class="badge {{ result.final_deduction.risk_level.badge_class }}">
+                        {{ result.final_deduction.risk_level.get_label(current_locale) | upper }}
+                    </span>
+                    <span class="execution-time">{{ _t('inference_time') }} {{ result.execution_time_ms }} ms</span>
+                </div>
+                <h2 class="result-diagnosis">{{ result.final_deduction.get_diagnosis(current_locale) }}</h2>
+                <div class="result-meta">
+                    <span>{{ _t('matched_rules') }} <strong>{{ result.matched_rules | length }}</strong></span>
+                    <span>{{ _t('priority_weight') }} <strong>{{ _t('level_of', level=result.final_deduction.risk_level | int) }}</strong></span>
+                </div>
+            </div>
+
+            <!-- Action Advice Directives -->
+            <div class="result-section">
+                <h3>{{ _t('clinical_directives') }}</h3>
+                <ul class="action-list">
+                    {% for advice in result.final_deduction.get_action_advice(current_locale) %}
+                        <li class="action-item">
+                            <span class="action-icon">✓</span>
+                            <span class="action-text">{{ advice }}</span>
+                        </li>
+                    {% endfor %}
+                </ul>
+            </div>
+
+            <!-- Conflict Resolution Explanation -->
+            <div class="result-section conflict-section">
+                <h3>{{ _t('conflict_analysis') }}</h3>
+                <div class="conflict-card">
+                    <div class="conflict-icon">⚖️</div>
+                    <div class="conflict-body">
+                        <p>{{ result.get_conflict_resolution_notes(current_locale) }}</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Working Memory Inspection -->
+            <div class="result-section">
+                <div class="section-toggle" onclick="toggleSection('workingMemoryPanel')">
+                    <h3>{{ _t('working_memory_title') }} {{ _t('facts_count', count=result.working_memory.all_facts() | length) }}</h3>
+                    <span class="toggle-indicator" id="wmToggleIcon">▼</span>
+                </div>
+                <div id="workingMemoryPanel" class="collapsible-content">
+                    <div class="fact-table-wrapper">
+                        <table class="fact-table">
+                            <thead>
+                                <tr>
+                                    <th>{{ _t('th_fact_key') }}</th>
+                                    <th>{{ _t('th_value') }}</th>
+                                    <th>{{ _t('th_source') }}</th>
+                                    <th>{{ _t('th_description') }}</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for key, fact in result.working_memory.all_facts().items() %}
+                                    <tr class="fact-row-{{ fact.source }}">
+                                        <td><code>{{ key }}</code></td>
+                                        <td><strong>{{ fact.value }}</strong></td>
+                                        <td>
+                                            <span class="badge-source badge-{{ fact.source }}">
+                                                {{ fact.source | upper }}
+                                            </span>
+                                        </td>
+                                        <td><small>{{ fact.description or 'Initial form submission' }}</small></td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Complete Explainable Audit Trail -->
+            <div class="result-section">
+                <div class="section-toggle" onclick="toggleSection('auditTrailPanel')">
+                    <h3>{{ _t('audit_trail_title') }} {{ _t('evaluations_count', count=result.audit_trail | length) }}</h3>
+                    <span class="toggle-indicator" id="auditToggleIcon">▼</span>
+                </div>
+                <div id="auditTrailPanel" class="collapsible-content">
+                    <p class="audit-intro">{{ _t('audit_intro') }}</p>
+
+                    <!-- Filter Controls -->
+                    <div class="audit-filters">
+                        <button type="button" class="btn-filter active" onclick="filterAudit('all', this)">{{ _t('filter_all') }} ({{ result.audit_trail | length }})</button>
+                        <button type="button" class="btn-filter" onclick="filterAudit('fired', this)">{{ _t('filter_fired') }}</button>
+                        <button type="button" class="btn-filter" onclick="filterAudit('failed', this)">{{ _t('filter_failed') }}</button>
+                    </div>
+
+                    <div class="audit-list">
+                        {% for entry in result.audit_trail %}
+                            <div class="audit-item audit-item-{{ 'fired' if entry.fired else 'failed' }}" data-status="{{ 'fired' if entry.fired else 'failed' }}">
+                                <div class="audit-item-header">
+                                    <div class="audit-item-title">
+                                        <span class="audit-status-icon">{{ '✅' if entry.fired else '❌' }}</span>
+                                        <strong>{{ entry.rule_id }}</strong>
+                                        <span class="audit-rule-name">— {{ entry.get_rule_name(current_locale) }}</span>
+                                    </div>
+                                    <span class="badge badge-sm badge-{{ entry.priority | lower }}">
+                                        {{ entry.priority }}
+                                    </span>
+                                </div>
+                                <div class="audit-item-body">
+                                    <div class="audit-condition">
+                                        <span class="audit-label">{{ _t('audit_condition') }}</span>
+                                        <code>{{ entry.condition_repr }}</code>
+                                    </div>
+                                    <div class="audit-reason">
+                                        <span class="audit-label">{{ _t('audit_evaluation') }}</span>
+                                        <span>{{ entry.get_reason(current_locale) }}</span>
+                                    </div>
+                                    {% if entry.asserted_facts %}
+                                        <div class="audit-asserted">
+                                            <span class="audit-label">{{ _t('audit_asserted') }}</span>
+                                            <code>{{ entry.asserted_facts }}</code>
+                                        </div>
+                                    {% endif %}
+                                    {% if entry.diagnosis %}
+                                        <div class="audit-diagnosis">
+                                            <span class="audit-label">{{ _t('audit_diagnosis') }}</span>
+                                            <em>{{ entry.get_diagnosis(current_locale) }}</em>
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+
+        {% else %}
+            <!-- Initial Empty State -->
+            <div class="empty-state">
+                <div class="empty-icon">🏥</div>
+                <h2>{{ _t('empty_title') }}</h2>
+                <p>{{ _t('empty_desc') }}</p>
+                
+                <div class="system-features-grid">
+                    <div class="feature-box">
+                        <div class="feature-icon">⛓️</div>
+                        <h4>{{ _t('feature_fc_title') }}</h4>
+                        <p>{{ _t('feature_fc_desc') }}</p>
+                    </div>
+                    <div class="feature-box">
+                        <div class="feature-icon">⚖️</div>
+                        <h4>{{ _t('feature_cr_title') }}</h4>
+                        <p>{{ _t('feature_cr_desc') }}</p>
+                    </div>
+                    <div class="feature-box">
+                        <div class="feature-icon">🔍</div>
+                        <h4>{{ _t('feature_xai_title') }}</h4>
+                        <p>{{ _t('feature_xai_desc') }}</p>
+                    </div>
+                </div>
+
+                <div class="instructions-prompt">
+                    <p>{{ _t('instructions_tip') }}</p>
+                </div>
+            </div>
+        {% endif %}
+    </section>
+
+</div>
+{% endblock %}

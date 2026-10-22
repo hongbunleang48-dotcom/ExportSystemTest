@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="{{ current_locale }}">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}{{ _t('app_title') }} | Expert System{% endblock %}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Kantumruy+Pro:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+</head>
+<body class="locale-{{ current_locale }}">
+    <!-- Top Navigation Bar -->
+    <header class="app-header">
+        <div class="header-container">
+            <div class="brand">
+                <div class="brand-icon">⚕️</div>
+                <div class="brand-text">
+                    <h1>{{ _t('app_title') }}</h1>
+                    <span class="brand-subtitle">{{ _t('app_subtitle') }}</span>
+                </div>
+            </div>
+            <nav class="nav-links">
+                <a href="{{ url_for('main.index') }}" class="nav-item active">{{ _t('nav_triage') }}</a>
+                <a href="{{ url_for('main.api_rules') }}" target="_blank" class="nav-item">{{ _t('nav_kb_api') }}</a>
+                <span class="engine-badge"><span class="pulse-dot"></span> {{ _t('engine_active') }}</span>
+
+                <!-- Bilingual Language Switcher Toggle -->
+                <div class="lang-switcher" title="Switch Language / ប្តូរភាសា">
+                    <a href="{{ url_for('main.set_language', locale='en') }}" class="lang-btn {% if current_locale == 'en' %}active{% endif %}">
+                        <span class="lang-flag">🇺🇸</span> EN
+                    </a>
+                    <span class="lang-divider">/</span>
+                    <a href="{{ url_for('main.set_language', locale='km') }}" class="lang-btn {% if current_locale == 'km' %}active{% endif %}">
+                        <span class="lang-flag">🇰🇭</span> ខ្មែរ
+                    </a>
+                </div>
+            </nav>
+        </div>
+    </header>
+
+    <!-- Main Content Container -->
+    <main class="main-content">
+        <div class="content-container">
+            <!-- Flash Messages -->
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    <div class="flash-messages">
+                        {% for category, message in messages %}
+                            <div class="alert alert-{{ category }}">
+                                <span>{{ message }}</span>
+                                <button type="button" class="close-alert" onclick="this.parentElement.remove();">&times;</button>
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            {% endwith %}
+
+            {% block content %}{% endblock %}
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="app-footer">
+        <div class="footer-container">
+            <div class="footer-info">
+                <p><strong>{{ _t('app_title') }}</strong> • Medical Rule-Based Inference Framework</p>
+                <p class="footer-disclaimer">
+                    ⚠️ <em>{{ _t('disclaimer') }}</em>
+                </p>
+            </div>
+            <div class="footer-meta">
+                <span>{{ _t('priority_hierarchy') }}</span>
+            </div>
+        </div>
+    </footer>
+
+    <!-- JavaScript Bundle -->
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+</body>
+</html>
